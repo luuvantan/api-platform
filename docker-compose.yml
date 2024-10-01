@@ -1,0 +1,48 @@
+version: "3.9"
+services:
+    api-platform:
+        build:
+            context: ./
+            dockerfile: .dockers/Dockerfile
+        container_name: api-platform
+        restart: unless-stopped
+        working_dir: /var/www
+        volumes:
+            - .:/var/www
+            - ./.dockers/php/php.ini:/usr/local/etc/php/conf.d/php.ini
+        networks:
+            - api-platform_net
+    api-platform-db:
+        image: 'mysql:latest'
+        container_name: api-platform-db
+        restart: unless-stopped
+        environment:
+            MYSQL_DATABASE: api-platform
+            MYSQL_ROOT_PASSWORD: api-platform
+            MYSQL_PASSWORD: api-platform
+            MYSQL_USER: api-platform
+        volumes:
+            - ./.dockers/mysql:/var/lib/mysql
+            - ./.dockers/mysql:/etc/mysql/conf.d
+        ports:
+            - "3308:3306"
+        networks:
+            - api-platform_net
+    nginx:
+        image: nginx:alpine
+        container_name: api-platform-nginx
+        restart: unless-stopped
+        ports:
+            - "8005:8005"
+        links:
+            - api-platform
+            - api-platform-db
+        volumes:
+            - ./:/var/www
+            - ./.dockers/nginx:/etc/nginx/conf.d/
+            - ./.dockers/logs/nginx:/var/log/nginx
+        networks:
+            - api-platform_net
+networks:
+    api-platform_net:
+        driver: bridge
